@@ -1,0 +1,2 @@
+class WaterGun():
+    pass
