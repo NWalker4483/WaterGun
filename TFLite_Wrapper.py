@@ -10,18 +10,19 @@ import importlib.util
 
 
 class TFLite_Wrapper():
-    def __init__(self, MODEL_NAME, GRAPH_NAME='detect.tflite', LABELMAP_NAME = 'labelmap.txt', min_conf_threshold = .5):
-        # resW, resH = args.resolution.split('x')
-        # imW, imH = int(resW), int(resH)
-
-
+    def __init__(self, MODEL_NAME, GRAPH_NAME='detect.tflite', LABELMAP_NAME = 'labelmap.txt', min_conf_threshold = .5, use_TPU= False):
         # Import TensorFlow libraries
-        # If tflite_runtime is installed, import self.interpreter from tflite_runtime, else import from regular tensorflow
+        # If tflite_runtime is installed, import interpreter from tflite_runtime, else import from regular tensorflow
+        # If using Coral Edge TPU, import the load_delegate library
         pkg = importlib.util.find_spec('tflite_runtime')
         if pkg:
-            from tflite_runtime.self.interpreter import Interpreter
+            from tflite_runtime.interpreter import Interpreter
+            if use_TPU:
+                from tflite_runtime.interpreter import load_delegate
         else:
-            from tensorflow.lite.python.self.interpreter import Interpreter
+            from tensorflow.lite.python.interpreter import Interpreter
+            if use_TPU:
+                from tensorflow.lite.python.interpreter import load_delegate
 
         # Get path to current working directory
         CWD_PATH = os.getcwd()
@@ -55,7 +56,11 @@ class TFLite_Wrapper():
 
         self.input_mean = 127.5
         self.input_std = 127.5
-
+        self.labels = labels
+        self.target_classes = {"person"}
+        self.min_conf_threshold = min_conf_threshold
+        self.good_detections = np.empty((0, 4))
+        
     def update(self, frame1):
         # Acquire frame and resize to expected shape [1xHxWx3]
         frame = frame1.copy()
@@ -75,25 +80,23 @@ class TFLite_Wrapper():
         boxes = self.interpreter.get_tensor(self.output_details[0]['index'])[0] # Bounding box coordinates of detected objects
         classes = self.interpreter.get_tensor(self.output_details[1]['index'])[0] # Class index of detected objects
         scores = self.interpreter.get_tensor(self.output_details[2]['index'])[0] # Confidence of detected objects
-
+        
+        good_detections = []
         # Loop over all detections and draw detection box if confidence is above minimum threshold
         for i in range(len(scores)):
             if ((scores[i] > self.min_conf_threshold) and (scores[i] <= 1.0)):
 
                 # Get bounding box coordinates and draw box
                 # Interpreter can return coordinates that are outside of image dimensions, need to force them to be within image using max() and min()
+                imH = frame1.shape[0]
+                imW = frame1.shape[1]
                 ymin = int(max(1,(boxes[i][0] * imH)))
                 xmin = int(max(1,(boxes[i][1] * imW)))
                 ymax = int(min(imH,(boxes[i][2] * imH)))
                 xmax = int(min(imW,(boxes[i][3] * imW)))
                 
-                cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (10, 255, 0), 2)
-
-                # Draw label
                 object_name = self.labels[int(classes[i])] # Look up object name from "labels" array using class index
-                label = '%s: %d%%' % (object_name, int(scores[i]*100)) # Example: 'person: 72%'
-                labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
-                label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
-                cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
-                cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text
-        return []
+                if object_name in self.target_classes:
+                    good_detections.append([xmin,ymin,xmax,ymax])
+        self.good_detections = np.array(good_detections) if len(good_detections) else np.empty((0, 4))
+        return self.good_detections
