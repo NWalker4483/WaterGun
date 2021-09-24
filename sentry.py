@@ -16,9 +16,9 @@ camera.start()
 
 frame = camera.read()
 frame_center = (frame.shape[0]//2, frame.shape[1]//2)
-pan_pid = PID(.01,0,.0025, setpoint=frame_center[1], output_limits = (0, 100), sample_time = 0.01)
+pan_pid = PID(.01,0,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
 
-tilt_pid = PID(.01,0,.0025, setpoint=frame_center[0], output_limits = (0, 100), sample_time = 0.01)
+tilt_pid = PID(.01,0,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
 
 def get_box_center(box):
     return (int(box[0] + ((box[2] - box[0])//2)), int(box[1] + ((box[3] - box[1]) //2)))
@@ -70,8 +70,8 @@ while(1):
 
         box_center = get_box_center(box)
         cv2.circle(frame, box_center, 5, (0,0,255), -1)
-        #water_gun.pan = pan_pid(box_center[1])
-        #water_gun.tilt = tilt_pid(box_center[0])
+        #water_gun.pan = pan_pid(box_center[1] - frame_center[1])
+        #water_gun.tilt = tilt_pid(box_center[0] - frame_center[0])
 
 
     cv2.imshow('Original',frame)
