@@ -229,7 +229,6 @@ class Sort(object):
     trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
     for t in reversed(to_del):
       self.trackers.pop(t)
-      print("###############################")
     matched, unmatched_dets, unmatched_trks = associate_detections_to_trackers(dets,trks, self.iou_threshold)
 
     # update matched trackers with assigned detections
@@ -243,7 +242,6 @@ class Sort(object):
     i = len(self.trackers)
     for trk in reversed(self.trackers):
         d = trk.get_state()[0]
-        print(d)
         if (trk.time_since_update < 10) and (trk.hit_streak >= self.min_hits or self.frame_count <= self.min_hits):
           ret.append(np.concatenate((d,[trk.id+1])).reshape(1,-1)) # +1 as MOT benchmark requires positive
         i -= 1

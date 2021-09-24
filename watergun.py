@@ -30,7 +30,7 @@ class WaterGun(Thread):
         self.pan_pin = pan_pin
         self.tilt_pin = tilt_pin
         self.shoot_pin = shoot_pin
-        self.center = center
+        self.__center = center
         self.max_on_time = max_on_time
         
         self.pan = 0
@@ -55,7 +55,10 @@ class WaterGun(Thread):
         self._tilt = constrain(value, 0, 100)
         value = 1000 + int(self._tilt * 10)
         self.gpio.set_servo_pulsewidth(self.tilt_pin, value)
-        
+    
+    def center(self):
+        pass
+    
     def run(self):
         self.started = True
         try:
@@ -69,11 +72,16 @@ class WaterGun(Thread):
     def shoot(self):
         if(self.started):
             if self.__last_off > self.__last_on:
-                self.__last_on = time.time()
-                self.gpio.write(self.shoot_pin, 1)
+                if time.time() - self.__last_off < self.__last_on_duration * 2:
+                    print("To Soon Allowing solenoid to cool. Shot Skipped")
+                else:
+                    self.__last_on = time.time()
+                    self.gpio.write(self.shoot_pin, 1)
         
     def stop(self):
-        self.__last_off = time.time()
+        if self.__last_off < self.__last_on:
+            self.__last_on_duration = self.__last_on - self.__last_off 
+            self.__last_off = time.time()
         self.gpio.write(self.shoot_pin, 0)
 
     def close(self):
@@ -86,14 +94,7 @@ class WaterGun(Thread):
         self.__alive = False
 
 if __name__ == "__main__":
-    #from utils import UDPStream
     import time
-    import socket
-    import os
-
-    control_update_topic = 'c'
-    goal_update_topic = 'g'
-    idle_topic = 'i'
 
     gun = WaterGun(max_on_time = 3)
     gun.start()
