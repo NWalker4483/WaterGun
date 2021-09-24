@@ -9,7 +9,7 @@ import numpy as np
 sort = Sort(max_age=24)
 camera = VideoStream()
 camera.start()
-# water_gun = WaterGun()
+# water_gun = WaterGun(max_on_time,2.5)
 # water_gun.start()
 # water_gun.tilt = 50
 # water_gun.pan = 50
