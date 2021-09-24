@@ -32,6 +32,7 @@ class WaterGun(Thread):
         self.shoot_pin = shoot_pin
         self.__center = center
         self.max_on_time = max_on_time
+        self.shot_clock = max_on_time
         
         self.pan = 0
         self.tilt = 0
@@ -65,17 +66,22 @@ class WaterGun(Thread):
             while self.__alive:
                 if time.time() - self.__last_on >= self.max_on_time - 1:
                     self.stop()
+                if time.time() - self.__last_on >= self.shot_clock - 1:
+                    self.shot_clock = self.max_on_time
+                    self.stop()
         finally:
             self.stop()
             self.close()
     
-    def shoot(self):
+    def shoot(self, duration=-1):
         if(self.started):
             if self.__last_off > self.__last_on:
                 if time.time() - self.__last_off < self.__last_on_duration * 2:
                     print("To Soon Allowing solenoid to cool. Shot Skipped")
                 else:
                     self.__last_on = time.time()
+                    if duration != -1:
+                        self.shot_clock = duration
                     self.gpio.write(self.shoot_pin, 1)
         
     def stop(self):

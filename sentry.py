@@ -1,4 +1,5 @@
 # from watergun import WaterGun
+import time
 from simple_pid import PID
 from sort import Sort
 from imutils.video import VideoStream
@@ -15,18 +16,22 @@ camera.start()
 # water_gun.pan = 50
 
 frame = camera.read()
-frame_center = (frame.shape[0]//2, frame.shape[1]//2)
+frame = imutils.resize(frame, width = 600)
+frame_center = (frame.shape[1]//2, frame.shape[0]//2)
 pan_pid = PID(.01,0,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
 
 tilt_pid = PID(.01,0,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
 
 def get_box_center(box):
     return (int(box[0] + ((box[2] - box[0])//2)), int(box[1] + ((box[3] - box[1]) //2)))
-
+def distance(p1, p2):
+    x1,y1 = p1
+    x2,y2 = p2
+    return ((x2 - x1)**2 + (y2 - y1)**2)**.5
+lock_start = time.time()
 while(1):
     frame = camera.read()
 
-    
     frame = imutils.resize(frame, width = 600)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     
@@ -70,6 +75,19 @@ while(1):
 
         box_center = get_box_center(box)
         cv2.circle(frame, box_center, 5, (0,0,255), -1)
+
+        cv2.circle(frame, frame_center, 5, (255,0,255), -1)
+        
+
+        lock_dist = distance(box_center, frame_center)
+        if lock_dist <= 100:
+            if time.time() - lock_start >= 3:
+                print("Fire")
+                lock_start = time.time()
+                pass
+                #water_gun.shoot(duration=2)
+        else:
+            lock_start = time.time()
         #water_gun.pan = pan_pid(box_center[1] - frame_center[1])
         #water_gun.tilt = tilt_pid(box_center[0] - frame_center[0])
 
