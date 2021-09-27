@@ -10,16 +10,14 @@ import numpy as np
 sort = Sort(max_age=24)
 camera = VideoStream()
 camera.start()
-# water_gun = WaterGun(max_on_time,2.5)
+# water_gun = WaterGun(max_on_time =2.5)
 # water_gun.start()
 # water_gun.tilt = 50
 # water_gun.pan = 50
 
 frame = camera.read()
-frame = imutils.resize(frame, width = 600)
-frame_center = (frame.shape[1]//2, frame.shape[0]//2)
-pan_pid = PID(.01,0,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
 
+pan_pid = PID(.01,0,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
 tilt_pid = PID(.01,0,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
 
 def get_box_center(box):
@@ -28,11 +26,15 @@ def distance(p1, p2):
     x1,y1 = p1
     x2,y2 = p2
     return ((x2 - x1)**2 + (y2 - y1)**2)**.5
+
 lock_start = time.time()
-while(1):
+
+while True:
     frame = camera.read()
 
     frame = imutils.resize(frame, width = 600)
+    frame_center = (frame.shape[1]//2, frame.shape[0]//2)
+    
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     
     lower_red = np.array([30,150,50])
