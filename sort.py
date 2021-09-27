@@ -19,10 +19,6 @@ from __future__ import print_function
 
 import os
 import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 from skimage import io
 
 import glob
@@ -269,6 +265,11 @@ def parse_args():
     return args
 
 if __name__ == '__main__':
+    
+  import matplotlib
+  matplotlib.use('TkAgg')
+  import matplotlib.pyplot as plt
+  import matplotlib.patches as patches
   # all train
   args = parse_args()
   display = args.display

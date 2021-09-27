@@ -1,4 +1,4 @@
-# from watergun import WaterGun
+from watergun import WaterGun
 import time
 from simple_pid import PID
 from sort import Sort
@@ -10,17 +10,17 @@ import numpy as np
 sort = Sort(max_age=24)
 camera = VideoStream()
 camera.start()
-# water_gun = WaterGun(max_on_time,2.5)
-# water_gun.start()
-# water_gun.tilt = 50
-# water_gun.pan = 50
+water_gun = WaterGun(max_on_time=2.5)
+water_gun.start()
+water_gun.tilt = 50
+water_gun.pan = 50
 
 frame = camera.read()
 frame = imutils.resize(frame, width = 600)
-frame_center = (frame.shape[1]//2, frame.shape[0]//2)
-pan_pid = PID(.01,0,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
+frame_center = (frame.shape[1]//2, 100 + (frame.shape[0]//2))
+pan_pid = PID(.5,0.5,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
 
-tilt_pid = PID(.01,0,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
+tilt_pid = PID(.5,0.5,.0025, setpoint=0, output_limits = (0, 100), sample_time = 0.01)
 
 def get_box_center(box):
     return (int(box[0] + ((box[2] - box[0])//2)), int(box[1] + ((box[3] - box[1]) //2)))
@@ -35,8 +35,8 @@ while(1):
     frame = imutils.resize(frame, width = 600)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     
-    lower_red = np.array([30,150,50])
-    upper_red = np.array([255,255,180])
+    lower_red = np.array([0,90,50])
+    upper_red = np.array([15,255,230])
     
     mask = cv2.inRange(hsv, lower_red, upper_red)
     # ksize
@@ -80,25 +80,30 @@ while(1):
         
 
         lock_dist = distance(box_center, frame_center)
-        if lock_dist <= 100:
-            if time.time() - lock_start >= 3:
+        if lock_dist <= 70:
+            if time.time() - lock_start >= 0:
                 print("Fire")
                 lock_start = time.time()
-                pass
-                #water_gun.shoot(duration=2)
+                water_gun.shoot(duration=2, bump = 10)
         else:
             lock_start = time.time()
-        #water_gun.pan = pan_pid(box_center[1] - frame_center[1])
-        #water_gun.tilt = tilt_pid(box_center[0] - frame_center[0])
+            pe = box_center[0] - frame_center[0]
+            pt = box_center[1] - frame_center[1]
+            
+            water_gun.pan += 1 if pe > 0 else -1 #pan_pid()
+            water_gun.tilt += 1 if pt > 0 else -1 # tilt_pid(box_center[0] - frame_center[0])
 
+    try:
+        pass
+        #cv2.imshow('Original',frame)
+        # cv2.imshow('Mask',mask)
+        # cv2.imshow('Erosion',erosion)
+        # cv2.imshow('Dilation',dilation)
 
-    cv2.imshow('Original',frame)
-    # cv2.imshow('Mask',mask)
-    # cv2.imshow('Erosion',erosion)
-    # cv2.imshow('Dilation',dilation)
+        #k = cv2.waitKey(1) & 0xFF
+        #if k == 27:
+        #    break
+    except:
+        pass
 
-    k = cv2.waitKey(5) & 0xFF
-    if k == 27:
-        break
-
-cv2.destroyAllWindows()
+#cv2.destroyAllWindows()

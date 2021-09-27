@@ -7,9 +7,7 @@ import time
 
 # initialize the video stream, sensors, etc
 print("[INFO] starting video stream...")
-vs = VideoStream(usePiCamera = True)
-        
-vs.stream.camera.shutter_speed = 2000
+vs = VideoStream()
 vs = vs.start()
 time.sleep(2)
 
@@ -68,7 +66,7 @@ while(1):
     # Threshold the HSV image to get only blue colors
     if (tuple(lower_hsv_old) != tuple(lower_hsv) or tuple(upper_hsv_old) != tuple(upper_hsv)):
         lower_hsv_old, upper_hsv_old = lower_hsv, upper_hsv
-        h,s,v = cv2.split(hsv)
+        h,s,v = cv.split(hsv)
         mask = cv.inRange(hsv, lower_hsv_old, upper_hsv_old)
     cv.putText(mask,'Lower HSV: [' + str(lh) +',' + str(ls) + ',' + str(lv) + ']', (10,30), font, 0.5, (200,255,155), 1, cv.LINE_AA)
     cv.putText(mask,'Upper HSV: [' + str(uh) +',' + str(us) + ',' + str(uv) + ']', (10,60), font, 0.5, (200,255,155), 1, cv.LINE_AA)
