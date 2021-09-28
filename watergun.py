@@ -32,10 +32,17 @@ class WaterGun(Thread):
         self.shoot_pin = shoot_pin
         self.__center = center
         self.max_on_time = max_on_time
+       	self.bump=0
         self.shot_clock = max_on_time
         
         self.pan = 0
         self.tilt = 0
+
+        self.pan_goal = 0
+        self.pan_alpha = .8
+
+        self.tilt_goal = 0
+        self.tilt_alpha = .8
         
     @property
     def pan(self):
@@ -43,9 +50,9 @@ class WaterGun(Thread):
     
     @pan.setter
     def pan(self, value):
-        self._pan = constrain(value, 0, 100)
-        value = 500 + int(self._pan * 20)
-        self.gpio.set_servo_pulsewidth(self.pan_pin, value)
+        self.pan_goal = constrain(value, 0, 100)
+        # value = 500 + int(self._pan * 20)
+        # self.gpio.set_servo_pulsewidth(self.pan_pin, value)
         
     @property
     def tilt(self):
@@ -53,9 +60,9 @@ class WaterGun(Thread):
     
     @tilt.setter
     def tilt(self, value):
-        self._tilt = constrain(value, 0, 100)
-        value = 1000 + int(self._tilt * 10)
-        self.gpio.set_servo_pulsewidth(self.tilt_pin, value)
+        self._tilt_goal = constrain(value, 0, 100)
+        # value = 500 + int(self._tilt * 20)
+        # self.gpio.set_servo_pulsewidth(self.tilt_pin, value)
     
     def center(self):
         pass
@@ -69,25 +76,39 @@ class WaterGun(Thread):
                 if time.time() - self.__last_on >= self.shot_clock - 1:
                     self.shot_clock = self.max_on_time
                     self.stop()
+                
+                self._tilt = (self._tilt_goal * self.tilt_alpha) + (self._tilt * (1 - self.tilt_alpha)) 
+                self._tilt = constrain(self._tilt, 0, 100)
+                value = 500 + int(self._tilt * 20)
+                self.gpio.set_servo_pulsewidth(self.tilt_pin, value)
+
+                self._pan = (self._pan_goal * self.pan_alpha) + (self._pan * (1 - self.pan_alpha)) 
+                self._pan = constrain(self._pan, 0, 100)
+                value = 500 + int(self._pan * 20)
+                self.gpio.set_servo_pulsewidth(self.pan_pin, value)
         finally:
             self.stop()
             self.close()
     
-    def shoot(self, duration=-1):
+    def shoot(self, duration=-1, bump = 0):
         if(self.started):
             if self.__last_off > self.__last_on:
-                if time.time() - self.__last_off < self.__last_on_duration * 2:
+                if False and time.time() - self.__last_off < self.__last_on_duration * 1:
                     print("To Soon Allowing solenoid to cool. Shot Skipped")
                 else:
                     self.__last_on = time.time()
+                    self.bump = bump
                     if duration != -1:
                         self.shot_clock = duration
+                    self.tilt -= bump
                     self.gpio.write(self.shoot_pin, 1)
         
     def stop(self):
         if self.__last_off < self.__last_on:
             self.__last_on_duration = self.__last_on - self.__last_off 
             self.__last_off = time.time()
+        self.tilt += self.bump
+        self.bump = 0 
         self.gpio.write(self.shoot_pin, 0)
 
     def close(self):
