@@ -18,6 +18,7 @@ class NCS2_Wrapper():
             self.filter_for = set(NCS2_Wrapper.CLASSES)
         else:
             self.filter_for = filter_for
+        self.min_confidence = min_confidence
         """
         ap.add_argument("-p", "--prototxt", required=True,
             help="path to Caffe 'deploy' prototxt file")

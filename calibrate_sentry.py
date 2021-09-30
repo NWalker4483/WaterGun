@@ -1,7 +1,11 @@
 import numpy as np
 import cv2
 from imutils.video import VideoStream
-
+from watergun import WaterGun
+#a = WaterGun()
+#a.start()
+#a.center()
+#a.stop()
 camera = VideoStream()
 camera.start()
 
@@ -17,11 +21,13 @@ chesspoints = []
 try:
     while True:
         img = camera.read()
+        img = cv2.flip(img,0)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # Find the chess board corners
         ret, corners = cv2.findChessboardCorners(gray, (7,6), None)
         # If found, add object points, image points (after refining them)
         if ret == True:
+            time.sleep(.25)
             objpoints.append(objp)
             corners2 = cv2.cornerSubPix(gray, corners, (11,11), (-1,-1), criteria)
             imgpoints.append(corners)
@@ -34,8 +40,11 @@ try:
 except Exception as e:
     raise(e)
 finally:
+    
+    print("Started Calibration")
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     np.save("camera_matrix.npy", mtx)
     np.save("dist_coefficients.npy", dist)
     print(ret, mtx, dist, rvecs, tvecs)
+    #camera.release()
     cv2.destroyAllWindows()
